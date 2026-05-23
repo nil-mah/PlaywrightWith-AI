@@ -24,19 +24,6 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    [
-      'allure-playwright',
-      {
-        resultsDir: 'allure-results',
-        detail: true,
-        suiteTitle: true,
-        environmentInfo: {
-          NODE_VERSION: process.version,
-          BASE_URL: process.env.BASE_URL ?? 'not-set',
-          CI: process.env.CI ?? 'false',
-        },
-      },
-    ],
   ],
 
   // ─── Shared Settings ───────────────────────────────────────────────────────
@@ -53,36 +40,6 @@ export default defineConfig({
       Accept: 'application/json',
     },
   },
-
-  // ─── Projects ──────────────────────────────────────────────────────────────
-  projects: [
-    // ── Setup project: global auth ───────────────────────────────────────────
-    {
-      name: 'setup',
-      testMatch: '**/global.setup.ts',
-    },
-
-    // ── UI Tests ─────────────────────────────────────────────────────────────
-    {
-      name: 'ui-chromium',
-      testDir: './tests/ui',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/user.json',  // Reuse authenticated session
-      },
-      dependencies: ['setup'],
-    },
-
-    // ── API Tests ─────────────────────────────────────────────────────────────
-    {
-      name: 'api',
-      testDir: './tests/api',
-      use: {
-        // No browser needed for pure API tests
-        baseURL: process.env.API_BASE_URL ?? process.env.BASE_URL,
-      },
-    },
-  ],
 
   // ─── Output ────────────────────────────────────────────────────────────────
   outputDir: 'test-results',

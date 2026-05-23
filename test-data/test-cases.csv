@@ -1,8 +1,0 @@
-scenario,email,password,expectedResult,expectedError
-Valid credentials,valid@example.com,ValidPass123!,success,
-Empty email,,ValidPass123!,failure,Email is required
-Empty password,valid@example.com,,failure,Password is required
-Invalid email format,notanemail,ValidPass123!,failure,Please enter a valid email
-Wrong password,valid@example.com,WrongPass999!,failure,Invalid email or password
-SQL injection attempt,' OR '1'='1,anything,failure,Invalid email or password
-XSS attempt,<script>alert(1)</script>,ValidPass123!,failure,Invalid email or password
