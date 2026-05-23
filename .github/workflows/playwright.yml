@@ -1,0 +1,222 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ui
+          - api
+
+# Cancel in-progress runs on the same branch to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # These values are safe to expose publicly
+  NODE_VERSION: '22'
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: Install & cache dependencies
+  # ─────────────────────────────────────────────────────────────────────────────
+  install:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: Lint & TypeScript type-check
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: TypeScript type-check
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3a: API Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-api:
+    name: API Tests
+    runs-on: ubuntu-latest
+    needs: install
+    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'api' || github.event.inputs.test_suite == '' }}
+    env:
+      # Secrets are injected from GitHub → Settings → Secrets and variables → Actions
+      BASE_URL: ${{ secrets.BASE_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
+      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Run API tests
+        run: npx playwright test --project=api
+
+      - name: Upload Allure results (API)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-api
+          path: allure-results/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3b: UI Tests (sharded across 3 runners for speed)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-ui:
+    name: UI Tests (Shard ${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    needs: install
+    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'ui' || github.event.inputs.test_suite == '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
+      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI tests (shard ${{ matrix.shard }}/3)
+        run: npx playwright test --project=ui-chromium --shard=${{ matrix.shard }}/3
+
+      - name: Upload Allure results (UI shard ${{ matrix.shard }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-ui-${{ matrix.shard }}
+          path: allure-results/
+          retention-days: 7
+
+      - name: Upload Playwright HTML report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-ui-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 3
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 4: Merge Allure results and publish report
+  # ─────────────────────────────────────────────────────────────────────────────
+  allure-report:
+    name: Publish Allure Report
+    runs-on: ubuntu-latest
+    needs: [test-api, test-ui]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all Allure result artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: allure-results-all/
+          pattern: allure-results-*
+          merge-multiple: true
+
+      - name: Setup Java (required for Allure CLI)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Allure CLI
+        run: |
+          curl -o allure.tgz -L https://github.com/allure-framework/allure2/releases/download/2.30.0/allure-2.30.0.tgz
+          tar -zxvf allure.tgz
+          sudo mv allure-2.30.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+
+      - name: Generate Allure report
+        run: allure generate allure-results-all --clean -o allure-report
+
+      - name: Upload Allure HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 30
+
+      # Optional: deploy to GitHub Pages (enable Pages in repo settings first)
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-report
+          destination_dir: allure-report

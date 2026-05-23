@@ -1,0 +1,26 @@
+[
+  {
+    "role": "standard",
+    "email": "standard@example.com",
+    "password": "USE_ENV_VAR",
+    "firstName": "Alice",
+    "lastName": "Smith",
+    "department": "Engineering"
+  },
+  {
+    "role": "admin",
+    "email": "admin@example.com",
+    "password": "USE_ENV_VAR",
+    "firstName": "Bob",
+    "lastName": "Jones",
+    "department": "IT"
+  },
+  {
+    "role": "readonly",
+    "email": "readonly@example.com",
+    "password": "USE_ENV_VAR",
+    "firstName": "Carol",
+    "lastName": "White",
+    "department": "Finance"
+  }
+]
