@@ -31,18 +31,20 @@ test.describe('EventHub event browsing and booking', () => {
     // Verify login page is loaded
     await expect(page).toHaveURL(/login/);
 
-    // Fill email field
-    await page.getByPlaceholder(/email/i).fill(TEST_USER_EMAIL);
+    // Fill email field using label
+    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
 
-    // Fill password field
-    await page.getByPlaceholder(/password/i).fill(TEST_USER_PASSWORD);
+    // Fill password field using label
+    await page.getByLabel('Password').fill(TEST_USER_PASSWORD);
 
     // Click Sign In button
     await page.getByRole('button', { name: /sign in/i }).click();
 
-    // Verify user lands on events listing page
-    await expect(page).toHaveURL(/events/);
-    await page.getByPlaceholder(/search events/i).waitFor({ state: 'visible' });
+    // Verify user is logged in (page will redirect to home)
+    await expect(page).toHaveURL(/^https:\/\/eventhub\.rahulshettyacademy\.com\/?$/);
+    
+    // Verify logout button is visible (indicates successful login)
+    await page.getByRole('button', { name: /logout/i }).waitFor({ state: 'visible' });
   });
 
   // Cleanup: Logout
@@ -56,8 +58,11 @@ test.describe('EventHub event browsing and booking', () => {
   });
 
   test('@headed @mcp | Browse Diwali events', async ({ page }) => {
-    // Navigate to events page
+    // Navigate to events page after login
     await page.goto(eventsPageUrl);
+
+    // Verify events page is loaded
+    await expect(page).toHaveURL(/events/);
     await page.getByPlaceholder(/search events/i).waitFor({ state: 'visible' });
 
     // Search for "diwali"
@@ -75,8 +80,11 @@ test.describe('EventHub event browsing and booking', () => {
   });
 
   test('@headed @mcp | Book a Diwali event', async ({ page }) => {
-    // Navigate to events page
+    // Navigate to events page after login
     await page.goto(eventsPageUrl);
+
+    // Verify events page is loaded
+    await expect(page).toHaveURL(/events/);
     await page.getByPlaceholder(/search events/i).waitFor({ state: 'visible' });
 
     // Search for "diwali"
