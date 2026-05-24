@@ -34,7 +34,7 @@ test.describe('EventHub event browsing and booking', () => {
     // Fill email field using label
     await page.getByLabel('Email').fill(TEST_USER_EMAIL);
 
-    // Fill password field using label
+    // Fill password field using label - updated 0524
     await page.getByLabel('Password').fill(TEST_USER_PASSWORD);
 
     // Click Sign In button
