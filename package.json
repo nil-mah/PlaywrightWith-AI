@@ -5,12 +5,21 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test tests/ui",
+    "test:api": "playwright test tests/api",
+    "test:api:users": "playwright test tests/api/users",
+    "test:api:posts": "playwright test tests/api/posts",
+    "test:api:comments": "playwright test tests/api/comments",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:test": "npx playwright test --grep @smoke",
+    "agent:plan": "node agents/scripts/run-planner.js",
+    "agent:generate": "node agents/scripts/run-generator.js",
+    "agent:heal": "node agents/scripts/run-healer.js",
+    "agent:orchestrate": "node agents/orchestrate.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
