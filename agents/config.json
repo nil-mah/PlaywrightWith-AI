@@ -1,0 +1,61 @@
+{
+  "agents": {
+    "planner": {
+      "enabled": true,
+      "description": "Plans test scenarios and strategies",
+      "instructionsFile": "planner/.instructions.md",
+      "outputDir": "test-plans",
+      "timeout": 300000,
+      "tools": [
+        "semantic_search",
+        "grep_search",
+        "file_search",
+        "read_file",
+        "vscode_listCodeUsages",
+        "explore_subagent"
+      ]
+    },
+    "generator": {
+      "enabled": true,
+      "description": "Generates test code and Page Objects",
+      "instructionsFile": "generator/.instructions.md",
+      "outputDirs": ["tests/ui", "src/pages"],
+      "timeout": 600000,
+      "tools": [
+        "create_file",
+        "replace_string_in_file",
+        "read_file",
+        "file_search",
+        "get_errors",
+        "run_in_terminal"
+      ]
+    },
+    "healer": {
+      "enabled": true,
+      "description": "Diagnoses and fixes failing tests",
+      "instructionsFile": "healer/.instructions.md",
+      "inputDirs": ["test-results", "playwright-report"],
+      "outputDirs": ["tests/ui", "src/pages"],
+      "timeout": 600000,
+      "tools": [
+        "read_file",
+        "replace_string_in_file",
+        "grep_search",
+        "get_errors",
+        "run_in_terminal",
+        "explore_subagent"
+      ]
+    }
+  },
+  "orchestration": {
+    "sequence": ["planner", "generator", "healer"],
+    "parallelExecution": false,
+    "stopOnFailure": false,
+    "logLevel": "info"
+  },
+  "environment": {
+    "nodeVersion": ">=20.0.0",
+    "playwrightVersion": "^1.52.0",
+    "typescriptVersion": "^5.7.0"
+  }
+}
