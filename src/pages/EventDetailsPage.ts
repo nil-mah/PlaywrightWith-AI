@@ -62,8 +62,8 @@ export class EventDetailsPage extends BasePage {
     this.eventTime = page.locator('text=/pm|am/').first();
     this.eventVenue = page.locator('text=/Exhibition|Stadium|City/').first();
     this.eventCity = page.locator('text=/Delhi|Los Angeles|Hyderabad/').first();
-    this.availableSeats = page.locator('text=/seats available/');
-    this.pricePerTicket = page.locator('paragraph >> text=/\\$/').first();
+    this.availableSeats = page.locator('text=/seats available|max \\d+/').first();
+    this.pricePerTicket = page.locator('p').filter({ hasText: /\$/ }).first();
     this.aboutEventSection = page.getByRole('heading', { name: /about this event/i });
     this.eventDescription = this.aboutEventSection.locator('.. >> p');
 
@@ -75,7 +75,9 @@ export class EventDetailsPage extends BasePage {
     this.fullNameInput = page.locator('#customerName');
     this.emailInput = page.locator('#customer-email');
     this.phoneNumberInput = page.locator('#phone');
-    this.ticketCountDisplay = page.locator('generic').filter({ hasText: /^\d+$/ }).first();
+    this.ticketCountDisplay = page.locator('span, div, p').filter({ hasText: /^\d+$/ }).first();
+    this.priceBreakdown = page.locator('[class*="price"], [class*="breakdown"]').first();
+    this.totalPrice = page.locator('[class*="total"], text=/Total/i').first();
     this.confirmBookingButton = page.getByRole('button', { name: /confirm booking/i });
 
     // Navigation
