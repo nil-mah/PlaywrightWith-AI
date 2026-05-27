@@ -7,7 +7,6 @@ import * as path from 'path';
 // Load environment variables
 dotenv.config();
 
-const BASE_URL = process.env.BASE_URL || 'https://eventhub.rahulshettyacademy.com';
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'nileshma0201@gmail.com';
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'Playauto@0523';
 
@@ -59,7 +58,7 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
     }
   });
 
-  test('@pom @headed | Browse Diwali events using POM', async ({ page }) => {
+  test('@pom @headed | Browse Diwali events using POM', async () => {
     // Navigate to events page
     await eventsPage.navigateToEventsPage();
 
@@ -69,6 +68,9 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
 
     // Search for "diwali"
     await eventsPage.searchForEvent('diwali');
+
+    // Wait for search results to load
+    await eventsPage.waitForSearchResults();
 
     // Get all event titles
     const eventTitles = await eventsPage.getAllEventTitles();
@@ -111,7 +113,7 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
     expect(pageContent).toMatch(/Booking Confirmed|Thank you|Confirmed|reserved/i);
   });
 
-  test('@pom @headed | Verify event details page elements', async ({ page }) => {
+  test('@pom @headed | Verify event details page elements', async () => {
     // Navigate directly to event details page
     await eventDetailsPage.navigateToEventDetails(3);
 
@@ -138,7 +140,7 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
     expect(await eventDetailsPage.phoneNumberInput.isVisible()).toBe(true);
   });
 
-  test('@pom @headed | Verify ticket increment functionality', async ({ page }) => {
+  test('@pom @headed | Verify ticket increment functionality', async () => {
     // Navigate to event details page
     await eventDetailsPage.navigateToEventDetails(3);
 
@@ -158,12 +160,15 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
     expect(parseInt(newCount)).toBe(parseInt(initialCount) + 1);
   });
 
-  test('@pom @headed | Test all EventsPage filter options', async ({ page }) => {
+  test('@pom @headed | Test all EventsPage filter options', async () => {
     // Navigate to events page
     await eventsPage.navigateToEventsPage();
 
     // Wait for page to load
     await eventsPage.waitForEventsPageToLoad();
+
+    // Wait for initial events to load
+    await eventsPage.waitForSearchResults();
 
     // Verify filters are available
     expect(await eventsPage.searchInput.isVisible()).toBe(true);
@@ -176,6 +181,9 @@ test.describe('EventHub event browsing and booking with Page Object Model', () =
 
     // Search for an event
     await eventsPage.searchForEvent('World');
+
+    // Wait for search results
+    await eventsPage.waitForSearchResults();
     const searchResultCount = await eventsPage.getEventCount();
     expect(searchResultCount).toBeLessThanOrEqual(initialCount);
   });

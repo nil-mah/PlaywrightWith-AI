@@ -47,8 +47,8 @@ export class EventsPage extends BasePage {
     this.cityDropdown = page.locator('select').nth(1);
 
     // Event card locators
-    this.eventArticles = page.locator('article');
-    this.eventTitles = page.locator('h3');
+    this.eventArticles = page.locator('article, [class*="event-card"], [class*="eventCard"], [role="article"]');
+    this.eventTitles = page.locator('h3, h2, [class*="event-title"], [class*="eventTitle"]');
     this.eventLinks = page.locator('article a[href*="/events/"]').first();
     this.bookNowButtons = page.getByRole('link', { name: /book now/i });
 
@@ -76,6 +76,16 @@ export class EventsPage extends BasePage {
    */
   async searchForEvent(searchTerm: string): Promise<void> {
     await this.fillField(this.searchInput, searchTerm);
+    // Wait for search results to load
+    await this.page.waitForTimeout(1500);
+  }
+
+  /**
+   * Wait for search results to be visible
+   */
+  async waitForSearchResults(): Promise<void> {
+    // Wait for at least one event article to be visible
+    await this.page.waitForSelector('article, [class*="event-card"], [class*="eventCard"], [role="article"]', { timeout: 15000 });
   }
 
   /**
